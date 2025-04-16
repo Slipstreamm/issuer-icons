@@ -2,7 +2,7 @@ import os
 import re
 
 # List of common TLDs without the dot
-TLDs = [
+TLDs = {
     'com',
     'org',
     'net',
@@ -141,22 +141,29 @@ TLDs = [
     'bible',
     'faith',
     'christmas',
-    'loc', // For local domains
-  ]
+    'loc'
+  }
 
 # Directory to search
-ROOT_DIR = "vectors"
+ROOT_DIR = "../vectors"
 
-def is_tld_attached(filename):
-    # Check if filename (without extension) ends in a known TLD and doesn't have a dot
+def is_flattened_domain(filename):
     name, ext = os.path.splitext(filename)
+    if '.' in name:
+        return False  # Properly separated, e.g. "google.com.svg"
     for tld in TLDs:
-        if name.endswith(tld) and "." not in name:
+        if name.endswith(tld) and len(name) > len(tld):
             return True
     return False
 
 for root, _, files in os.walk(ROOT_DIR):
     for file in files:
-        if file.lower().endswith(".svg") and is_tld_attached(file):
-            full_path = os.path.join(root, file)
-            print(f"Suspicious: {full_path}")
+        if not file.lower().endswith(".svg"):
+            continue
+
+        name, _ = os.path.splitext(file)
+
+        if is_flattened_domain(file):
+            parent = os.path.basename(os.path.normpath(root))
+            if name != parent and name.replace('.', '') != parent.replace('.', ''):
+                print(f"Suspicious: {os.path.join(root, file)}")
